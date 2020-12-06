@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" href="/css/chat.css"/>
+</head>
+<body>
+<form>
+    <div id="wrap">
+        <div>
+            <ul class="tab">
+                <li><a href="javascript:;">방리스트</a></li>
+                <li><a href="javascript:;">접속자리스트</a></li>
+            </ul>
+            <div>
+                <ul id="room-list"></ul>
+                <ul id="user-list"></ul>
+            </div>
+        </div>
+        <div id="rooms">
+           <div id="waiting"></div>
+        </div>
+    </div>
+    <input type="text" id="m"/>
+    <button type="submit">전송</button>
+</form>
+<script src="/js/socket.io/client-dist/socket.io.js"></script>
+<script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+<script>
+    $(function(){
+        const $wrap = $('#wrap');
+        const $roomList = $('#room-list');
+        const $userList = $('#user-list');
+        const $roomArea = $('#rooms');
+        const socket = io();
+        let roomId = 'waiting';
+        const roomDivs = {'waiting' : $roomArea.find('#waiting')}; //id:노드
+
+        $('form').submit(function(e){
+           e.preventDefault();
+           socket.emit('chat message', {
+               message:$('#m').val(),
+               roomId:roomId
+           });
+            $('#m').val('');
+            return false;
+        });
+
+        socket.on('message', (data)=> {
+            let sendType = data.sendType;
+
+            switch (sendType) {
+                case "wait":
+                    let roomInfo = data.roomInfo;
+                    let userInfo = data.userInfo;
+
+                    message.forEach((room) => {
+                        $roomList.append('<li><a href="javascript:;" data-id="'+room.id+'">'+ room.id +'(' + room.userSize + ')</a></li>');
+                    });
+
+                    break;
+                case "leave":
+                    let roomId = data.roomId;
+                    let message = data.message;
+                    break;
+                case "enter":
+                    break;
+                default:
+
+            }
+
+        });
+    });
+
+</script>
+</body>
+</html>
