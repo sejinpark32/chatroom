@@ -3,27 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
+    <link rel="stylesheet" href="/css/bootstrap.css"/>
     <link rel="stylesheet" href="/css/chat.css"/>
 </head>
 <body>
-<form>
-    <div id="wrap">
-        <div>
-            <ul class="tab">
-                <li><a href="javascript:;">방리스트</a></li>
-                <li><a href="javascript:;">접속자리스트</a></li>
+<form class="container">
+    <div id="wrap" class="row">
+        <div class="col-4">
+            <ul class="nav nav-tabs">
+                <li class="nav-item"><a href="javascript:;" class="nav-link active">방리스트</a></li>
+                <li class="nav-item"><a href="javascript:;" class="nav-link">접속자리스트</a></li>
             </ul>
             <div>
-                <ul id="room-list"></ul>
-                <ul id="user-list"></ul>
+                <ul id="room-list" class="list-group list-group-flush"></ul>
+                <ul id="user-list" class="list-group list-group-flush"></ul>
             </div>
         </div>
-        <div id="rooms">
-           <div id="waiting"></div>
+        <div class="col-8">
+            <ul class="nav nav-tabs">
+                <li class="nav-item"><a href="javascript:;" class="nav-link active">대기방</a></li>
+            </ul>
+            <div  id="rooms">
+                <div id="waiting"></div>
+            </div>
+            <div>
+                <input type="text" id="m"/>
+                <button type="submit">전송</button>
+            </div>
         </div>
     </div>
-    <input type="text" id="m"/>
-    <button type="submit">전송</button>
 </form>
 <script src="/js/socket.io/client-dist/socket.io.js"></script>
 <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
@@ -55,8 +63,12 @@
                     let roomInfo = data.roomInfo;
                     let userInfo = data.userInfo;
 
-                    message.forEach((room) => {
-                        $roomList.append('<li><a href="javascript:;" data-id="'+room.id+'">'+ room.id +'(' + room.userSize + ')</a></li>');
+                    roomInfo.forEach((room) => {
+                        $roomList.append('<li class="list-group-item"><a href="javascript:;" data-id="'+room.id+'">'+ room.id +'(' + room.userSize + ')</a></li>');
+                    });
+
+                    userInfo.forEach((user) => {
+                        $userList.append('<li class="list-group-item"><a href="javascript:;" data-id="' + user.userId +'">' + user.nickName + '</a></li>');
                     });
 
                     break;

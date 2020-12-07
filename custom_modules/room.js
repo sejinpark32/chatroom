@@ -4,6 +4,7 @@ class Room {
         this.roomId = roomId;
         this.isPublic = isPublic;
         this.roomName = roomName;
+        this.users = [];
 
         if(isPublic === undefined) {
             this.isPublic = true;
@@ -11,7 +12,10 @@ class Room {
             this.password = password;
         }
 
-        this.users = [user];
+        if(user !== undefined){
+            this.users.push(user);
+        }
+
         this.created = new Date();
     }
 
@@ -29,8 +33,8 @@ class Room {
     }
 }
 
-function create(roomId, userId, isPublic, password){
-    return new Room(roomId, userId, isPublic, password);
+function create(roomId, user, isPublic, password){
+    return new Room(roomId, user, isPublic, password);
 }
 
 exports.create = create;

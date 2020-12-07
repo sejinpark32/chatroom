@@ -27,8 +27,8 @@ class user {
     }
 }
 
-function create(userId, nickName){
-    return new user(userId, nickName);
+function create(socket){
+    return new user(socket);
 }
 
 exports.create = create;

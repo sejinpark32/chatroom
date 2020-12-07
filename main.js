@@ -33,10 +33,10 @@ io.on('connection', (socket) => {
         });
     }
 
-    for (let u in allUsers){
+    for (let idx in allUsers){
         userInfo.push({
-           userId: u.userId,
-           nickName: u.nickName
+           userId: allUsers[idx].userId,
+           nickName: allUsers[idx].nickName
         });
     }
 
@@ -64,10 +64,10 @@ io.on('connection', (socket) => {
         allUsers.splice(getUserIndex(socket.id), 1);
 
         //사용자가 접속해 있던 방에 나갔다고 공지
-        userRoomList.forEach(roomId => {
-            rooms[roomId].users.forEach(u => {
+        userRoomList.forEach(r => {
+            r.users.forEach(u => {
                u.socket.send({
-                  roomId: roomId,
+                  roomId: r.roomId,
                   sendType: 'leave',
                   message: currentUser.nickName
                });
@@ -92,6 +92,6 @@ http.listen(3000, ()=>{
     console.log('listening on *:3000');
 
     //서버가 뜨면 대기방을 생성
-    let waitingRoom = room.create('waiting', user.create('admin'), '대기방', true);
+    let waitingRoom = room.create('waiting', undefined, '대기방', true);
     rooms['waiting'] = waitingRoom;
 });
