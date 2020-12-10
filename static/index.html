@@ -7,82 +7,116 @@
     <link rel="stylesheet" href="/css/chat.css"/>
 </head>
 <body>
-<form class="container">
+<form id="container" class="container mt-lg-4 pt-lg-4 pb-lg-4" v-on:submit="sendMessage">
     <div id="wrap" class="row">
         <div class="col-4">
             <ul class="nav nav-tabs">
-                <li class="nav-item"><a href="javascript:;" class="nav-link active">방리스트</a></li>
-                <li class="nav-item"><a href="javascript:;" class="nav-link">접속자리스트</a></li>
+                <li class="nav-item"><a class="nav-link" v-bind:class="{active : isRoomShow}" v-on:click="toggleTab">방리스트</a></li>
+                <li class="nav-item"><a class="nav-link" v-bind:class="{active : !isRoomShow}" v-on:click="toggleTab">접속자리스트</a></li>
             </ul>
-            <div>
-                <ul id="room-list" class="list-group list-group-flush"></ul>
-                <ul id="user-list" class="list-group list-group-flush"></ul>
+            <div v-show="isRoomShow">
+                <ul class="list-group list-group-flush">
+                    <room-item v-for="item in roomList" v-bind:room="item" v-bind:key="item.id"></room-item>
+                </ul>
+            </div>
+            <div v-show="!isRoomShow">
+                <div><span class="badge badge-primary mr-sm-1">me!</span>{{myId}}</div>
+                <ul id="user-list" class="list-group list-group-flush">
+                    <user-item v-for="item in userList" v-bind:user="item" v-bind:key="item.userId"></user-item>
+                </ul>
             </div>
         </div>
         <div class="col-8">
             <ul class="nav nav-tabs">
-                <li class="nav-item"><a href="javascript:;" class="nav-link active">대기방</a></li>
+                <chat-room-item v-for="item in chatRoomList" v-bind:room="item" v-bind:key="item"></chat-room-item>
             </ul>
-            <div  id="rooms">
-                <div id="waiting"></div>
-            </div>
             <div>
-                <input type="text" id="m"/>
-                <button type="submit">전송</button>
+                <div class="chat-list"></div>
+                <div class="form-group row">
+                    <div class="col-10">
+                        <input type="text" class="form-control" v-model="message"/>
+                    </div>
+                    <div class="col-2">
+                        <button type="submit" class="btn btn-primary">전송</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </form>
+<script src="js/vue.js"></script>
 <script src="/js/socket.io/client-dist/socket.io.js"></script>
 <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
 <script>
-    $(function(){
-        const $wrap = $('#wrap');
-        const $roomList = $('#room-list');
-        const $userList = $('#user-list');
-        const $roomArea = $('#rooms');
-        const socket = io();
-        let roomId = 'waiting';
-        const roomDivs = {'waiting' : $roomArea.find('#waiting')}; //id:노드
+    Vue.component('room-item', {
+        props: ['room'],
+        template: '<li class="list-group-item">{{room.id}}({{room.userSize}})</li>'
+    });
 
-        $('form').submit(function(e){
-           e.preventDefault();
-           socket.emit('chat message', {
-               message:$('#m').val(),
-               roomId:roomId
-           });
-            $('#m').val('');
-            return false;
-        });
+    Vue.component('user-item', {
+        props: ['user'],
+        template: '<li class="list-group-item">{{user.nickName}}({{user.userId}})</li>'
+    });
 
-        socket.on('message', (data)=> {
-            let sendType = data.sendType;
+    Vue.component('chat-item', {
+        props: ['chat'],
+        template: '<li></li>'
+    });
 
-            switch (sendType) {
-                case "wait":
-                    let roomInfo = data.roomInfo;
-                    let userInfo = data.userInfo;
+    Vue.component('chat-room-item', {
+        props: ['room'],
+        template: '<li class="nav-item"><a class="nav-link active">{{room}}</a></li>'
+    });
 
-                    roomInfo.forEach((room) => {
-                        $roomList.append('<li class="list-group-item"><a href="javascript:;" data-id="'+room.id+'">'+ room.id +'(' + room.userSize + ')</a></li>');
-                    });
+    const app = new Vue({
+        el: '#container',
+        data: {
+            socket: io(),
+            roomId: 'waiting',
+            roomName: 'waiting',
+            message: '',
+            roomList: [],
+            userList: [],
+            chatRoomList: [],
+            chatList: {},
+            isRoomShow: true,
+            myId:'',
+            myNickName: ''
+        }, created: function() {
+            this.chatRoomList.push(this.roomName);
 
-                    userInfo.forEach((user) => {
-                        $userList.append('<li class="list-group-item"><a href="javascript:;" data-id="' + user.userId +'">' + user.nickName + '</a></li>');
-                    });
+            this.socket.on('message', (data) => {
+                let sendType = data.sendType;
 
-                    break;
-                case "leave":
-                    let roomId = data.roomId;
-                    let message = data.message;
-                    break;
-                case "enter":
-                    break;
-                default:
+                switch (sendType) {
+                    case "wait":
+                        this.roomList = data.roomInfo;
+                        this.userList = data.userInfo;
+                        this.myId = this.socket.id;
+                        break;
+                    case "leave":
+                        break;
 
+                    case "enter":
+                        break;
+                    default:
+                }
+            });
+        },
+        methods: {
+            sendMessage: function(e){
+                e.preventDefault();
+
+                this.socket.emit('chat message', {
+                    message: app.message,
+                    roomId: app.roomId
+                });
+
+                this.message = '';
+            }, toggleTab: function(){
+                this.isRoomShow = !this.isRoomShow;
             }
-
-        });
+        }
     });
 
 </script>

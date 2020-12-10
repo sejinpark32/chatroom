@@ -12,6 +12,7 @@
   "dependencies": {
     "bootstrap": "^4.5.3",
     "express": "^4.17.1",
-    "socket.io": "^3.0.3"
+    "socket.io": "^3.0.3",
+    "vue": "^2.6.12"
   }
 }

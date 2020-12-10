@@ -20,7 +20,6 @@ io.on('connection', (socket) => {
     //사용자객체생성
     let currentUser = user.create(socket);
     currentUser.enterRoom(rooms['waiting']);
-    allUsers.push(currentUser);
 
     //연결하면 접속 가능한 방 리스트와 사용자리스트를 전송
     let roomInfo = [];
@@ -29,7 +28,8 @@ io.on('connection', (socket) => {
     for(let roomId in rooms){
         roomInfo.push({
             id: roomId,
-            userSize: rooms[roomId].userSize()
+            userSize: rooms[roomId].userSize(),
+            roomName: rooms[roomId].roomName
         });
     }
 
@@ -39,6 +39,9 @@ io.on('connection', (socket) => {
            nickName: allUsers[idx].nickName
         });
     }
+
+    //본인은 제외하고 보냄
+    allUsers.push(currentUser);
 
     socket.send({
         sendType: 'wait',
