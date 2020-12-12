@@ -22,23 +22,31 @@ io.on('connection', (socket) => {
     currentUser.enterRoom(rooms['waiting']);
 
     //연결하면 접속 가능한 방 리스트와 사용자리스트를 전송
-    let roomInfo = [];
+    let roomInfo = {};
     let userInfo = [];
 
     for(let roomId in rooms){
-        roomInfo.push({
+        roomInfo[roomId] = {
             id: roomId,
             userSize: rooms[roomId].userSize(),
             roomName: rooms[roomId].roomName
-        });
+        };
     }
 
-    for (let idx in allUsers){
-        userInfo.push({
-           userId: allUsers[idx].userId,
-           nickName: allUsers[idx].nickName
+    //이미 접속해있던 사람들에게 새로 입장한 사용자 정보 공지
+    allUsers.forEach(u => {
+        u.socket.send({
+            sendType: 'enter',
+            userId: currentUser.userId,
+            nickName: currentUser.nickName,
+            roomId: 'waiting'
         });
-    }
+
+        userInfo.push({
+            userId: u.userId,
+            nickName: u.nickName
+        });
+    });
 
     //본인은 제외하고 보냄
     allUsers.push(currentUser);
@@ -46,34 +54,44 @@ io.on('connection', (socket) => {
     socket.send({
         sendType: 'wait',
         roomInfo: roomInfo,
-        userInfo: userInfo
+        userInfo: userInfo,
+        myId: currentUser.userId,
+        myNickName: currentUser.nickName
     });
 
     //채팅 이벤트 리스너 등록
-    socket.on('chat message', (msg) => {
+    socket.on('send', (msg) => {
+        let roomId = msg.roomId;
+        msg.sendType = 'chat';
+
+        rooms[roomId].users.forEach((u)=>{
+           u.socket.send(msg);
+        });
 
     });
 
     //연결이 끊어졌을때 해제 리스너 등록
     socket.on('disconnect', ()=> {
+        let userId = socket.id.substring(0, 5);
         //사용자가 접속해 있던 방 목록
-        let currentUser = getUser(socket.id);
+        let currentUser = getUser(userId);
         let userRoomList = currentUser.roomList;
 
         //방목록에서 user삭제
-        getUser(socket.id).leaveAll();
+        getUser(userId).leaveAll();
 
         //유저목록에서 삭제
-        allUsers.splice(getUserIndex(socket.id), 1);
+        allUsers.splice(getUserIndex(userId), 1);
 
         //사용자가 접속해 있던 방에 나갔다고 공지
         userRoomList.forEach(r => {
             r.users.forEach(u => {
-               u.socket.send({
-                  roomId: r.roomId,
-                  sendType: 'leave',
-                  message: currentUser.nickName
-               });
+                u.socket.send({
+                    sendType: 'leave',
+                    roomId: r.roomId,
+                    userNickName: currentUser.nickName,
+                    userId: currentUser.userId
+                });
             });
         });
 

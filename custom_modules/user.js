@@ -1,15 +1,15 @@
 class user {
 
     constructor(socket) {
-        this.userId = socket.id;
-        this.nickName = socket.id;
+        this.userId = socket.id.substring(0, 5);
+        this.nickName = socket.id.substring(0, 5);
         this.accessedAt = new Date();
         this.roomList = [];
         this.socket = socket;
     }
 
     enterRoom(room){
-        room.addUser(user);
+        room.addUser(this);
         this.roomList.push(room);
     }
 

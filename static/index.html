@@ -7,16 +7,18 @@
     <link rel="stylesheet" href="/css/chat.css"/>
 </head>
 <body>
-<form id="container" class="container mt-lg-4 pt-lg-4 pb-lg-4" v-on:submit="sendMessage">
+<form id="container" class="container mt-lg-4 pt-lg-4 pb-lg-4" v-on:submit.prevent="sendMessage">
     <div id="wrap" class="row">
         <div class="col-4">
             <ul class="nav nav-tabs">
-                <li class="nav-item"><a class="nav-link" v-bind:class="{active : isRoomShow}" v-on:click="toggleTab">방리스트</a></li>
-                <li class="nav-item"><a class="nav-link" v-bind:class="{active : !isRoomShow}" v-on:click="toggleTab">접속자리스트</a></li>
+                <li class="nav-item"><a class="nav-link" v-bind:class="{active : isRoomShow}" v-on:click="toggleTab">방리스트</a>
+                </li>
+                <li class="nav-item"><a class="nav-link" v-bind:class="{active : !isRoomShow}" v-on:click="toggleTab">접속자리스트</a>
+                </li>
             </ul>
             <div v-show="isRoomShow">
                 <ul class="list-group list-group-flush">
-                    <room-item v-for="item in roomList" v-bind:room="item" v-bind:key="item.id"></room-item>
+                    <room-item v-for="(value, key) in roomList" v-bind:room="value" v-bind:key="key"></room-item>
                 </ul>
             </div>
             <div v-show="!isRoomShow">
@@ -31,7 +33,9 @@
                 <chat-room-item v-for="item in chatRoomList" v-bind:room="item" v-bind:key="item"></chat-room-item>
             </ul>
             <div>
-                <div class="chat-list"></div>
+                <div class="chat-list">
+                    <chat-item v-for="(value, key) in chatList" v-bind:chat="value" v-bind:key="key"></chat-item>
+                </div>
                 <div class="form-group row">
                     <div class="col-10">
                         <input type="text" class="form-control" v-model="message"/>
@@ -47,26 +51,13 @@
 <script src="js/vue.js"></script>
 <script src="/js/socket.io/client-dist/socket.io.js"></script>
 <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
-<script>
-    Vue.component('room-item', {
-        props: ['room'],
-        template: '<li class="list-group-item">{{room.id}}({{room.userSize}})</li>'
-    });
+<script type="module">
 
-    Vue.component('user-item', {
-        props: ['user'],
-        template: '<li class="list-group-item">{{user.nickName}}({{user.userId}})</li>'
-    });
-
-    Vue.component('chat-item', {
-        props: ['chat'],
-        template: '<li></li>'
-    });
-
-    Vue.component('chat-room-item', {
-        props: ['room'],
-        template: '<li class="nav-item"><a class="nav-link active">{{room}}</a></li>'
-    });
+    import ChatItem from './js/components/ChatItem.js';
+    import ChatRoomItem from './js/components/ChatRoomItem.js';
+    import RoomItem from './js/components/RoomItem.js';
+    import UserItem from './js/components/UserItem.js';
+    import Message from './js/components/Message.js';
 
     const app = new Vue({
         el: '#container',
@@ -75,47 +66,86 @@
             roomId: 'waiting',
             roomName: 'waiting',
             message: '',
-            roomList: [],
+            roomList: {},
             userList: [],
             chatRoomList: [],
-            chatList: {},
+            chatList: {'waiting': []},
             isRoomShow: true,
-            myId:'',
+            myId: '',
             myNickName: ''
-        }, created: function() {
+        }, created: function () {
             this.chatRoomList.push(this.roomName);
 
             this.socket.on('message', (data) => {
                 let sendType = data.sendType;
+                let userId = data.userId;
+                let msg = '';
+                let roomId = data.roomId;
 
                 switch (sendType) {
+                    case "chat":
+                        this.addChatMsg(roomId, userId, data.message);
+                        break;
                     case "wait":
                         this.roomList = data.roomInfo;
                         this.userList = data.userInfo;
-                        this.myId = this.socket.id;
+                        this.myId = data.myId;
+                        this.myNickName = data.myNickName;
                         break;
                     case "leave":
-                        break;
+                        //접속자리스트에서 삭제
+                        let index = this.userList.find(e => e.userId == userId);
+                        this.userList.splice(index, 1);
 
+                        //접속해있던 방에 퇴장 메시지 뿌림
+                        roomId = data.roomId;
+                        msg = this.makeLeaveNoticeMsg(userId);
+                        this.addChatMsg(roomId, userId, msg);
+
+                        //방 접속자 인원수 감소
+                        this.changeRoomUserSize('waiting', -1);
+                        break;
                     case "enter":
+                        //접속자리스트에 추가
+                        this.userList.push({userId: userId, nickName: data.nickName});
+
+                        //대기방에 입장 메시지 뿌림
+                        msg = this.makeEnterNoticeMsg(userId);
+                        this.addChatMsg(roomId, userId, msg);
+
+                        //방 접속자 인원수 증가
+                        this.changeRoomUserSize(roomId, 1);
                         break;
                     default:
                 }
             });
         },
         methods: {
-            sendMessage: function(e){
-                e.preventDefault();
-
-                this.socket.emit('chat message', {
-                    message: app.message,
-                    roomId: app.roomId
+            sendMessage: function (e) {
+                this.socket.emit('send', {
+                    message: this.message,
+                    roomId: this.roomId,
+                    userId: this.myId
                 });
 
                 this.message = '';
-            }, toggleTab: function(){
+            }, toggleTab: function () {
                 this.isRoomShow = !this.isRoomShow;
+            }, makeEnterNoticeMsg: function (userId) {
+                return userId + '님이 입장하셨습니다.';
+            }, makeLeaveNoticeMsg: function (userId) {
+                return userId + '님이 퇴장하셨습니다.';
+            }, addChatMsg: function (roomId, userId, msg) {
+                this.chatList[roomId].push({userId: userId, text: msg});
+            }, changeRoomUserSize: function (roomId, change) {
+                this.roomList[roomId].userSize += change;
             }
+        },
+        components: {
+            ChatItem: ChatItem,
+            ChatRoomItem: ChatRoomItem,
+            RoomItem: RoomItem,
+            UserItem: UserItem
         }
     });
 
