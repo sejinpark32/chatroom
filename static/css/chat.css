@@ -5,3 +5,4 @@ body {background: var(--light);}
 ul {list-style: none;padding: 0;}
 .container {background: var(--white);border-radius: 10px;border: 1px solid var(--light-gray);}
 .chat-list {height: 500px;overflow-y: scroll;}
+.btn-none {background: none;border: none;}

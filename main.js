@@ -97,6 +97,10 @@ io.on('connection', (socket) => {
 
     });
 
+    socket.on('changeNickname', (msg) => {
+
+    })
+
     function getUser(userId) {
         return allUsers.find((u) => {
             return u.userId == userId;

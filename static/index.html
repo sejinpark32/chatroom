@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
-    <link rel="stylesheet" href="/css/bootstrap.css"/>
-    <link rel="stylesheet" href="/css/chat.css"/>
+    <link rel="stylesheet" href="./css/bootstrap.css"/>
+    <link rel="stylesheet" href="./css/chat.css"/>
+    <link rel="stylesheet" href="./css/font-awesome.css"/>
 </head>
 <body>
 <form id="container" class="container mt-lg-4 pt-lg-4 pb-lg-4" v-on:submit.prevent="sendMessage">
@@ -21,8 +22,9 @@
                     <room-item v-for="(value, key) in roomList" v-bind:room="value" v-bind:key="key"></room-item>
                 </ul>
             </div>
-            <div v-show="!isRoomShow">
-                <div><span class="badge badge-primary mr-sm-1">me!</span>{{myId}}</div>
+            <div class="p-3" v-show="!isRoomShow">
+                <div class="clearfix"><span class="badge badge-primary mr-sm-1">me!</span>{{myId}}
+                    <button type="button" class="btn btn-sm btn-outline-warning float-right" v-on:click="showNicknameLayer"><i class="fa fa-edit"></i>닉네임변경</button></div>
                 <ul id="user-list" class="list-group list-group-flush">
                     <user-item v-for="item in userList" v-bind:user="item" v-bind:key="item.userId"></user-item>
                 </ul>
@@ -47,17 +49,34 @@
             </div>
         </div>
     </div>
+    <div id="changeIdModal" class="modal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="staticBackdropLabel">닉네임변경</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    ...
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                    <button type="button" class="btn btn-primary">변경</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </form>
 <script src="js/vue.js"></script>
-<script src="/js/socket.io/client-dist/socket.io.js"></script>
-<script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+<script src="./js/socket.io/client-dist/socket.io.js"></script>
+<script src="./js/jquery.min.js"></script>
+<script src="./js/bootstrap.js"></script>
 <script type="module">
 
     import ChatItem from './js/components/ChatItem.js';
     import ChatRoomItem from './js/components/ChatRoomItem.js';
     import RoomItem from './js/components/RoomItem.js';
     import UserItem from './js/components/UserItem.js';
-    import Message from './js/components/Message.js';
 
     const app = new Vue({
         el: '#container',
@@ -72,7 +91,8 @@
             chatList: {'waiting': []},
             isRoomShow: true,
             myId: '',
-            myNickName: ''
+            myNickName: '',
+            changeIdModal: {}
         }, created: function () {
             this.chatRoomList.push(this.roomName);
 
@@ -84,7 +104,7 @@
 
                 switch (sendType) {
                     case "chat":
-                        this.addChatMsg(roomId, userId, data.message);
+                        this.addChatMsg(roomId, userId, data.message );
                         break;
                     case "wait":
                         this.roomList = data.roomInfo;
@@ -119,6 +139,8 @@
                     default:
                 }
             });
+        }, mounted: function(){
+            this.changeIdModal = new bootstrap.Modal(document.getElementById('changeIdModal'), {backdrop: true, keyboard: false, focus: true});
         },
         methods: {
             sendMessage: function (e) {
@@ -139,6 +161,12 @@
                 this.chatList[roomId].push({userId: userId, text: msg});
             }, changeRoomUserSize: function (roomId, change) {
                 this.roomList[roomId].userSize += change;
+            }, changeNickname: function(){
+                this.socket.emit('changeNickname', {
+
+                });
+            }, showNicknameLayer: function(){
+                this.changeIdModal.show();
             }
         },
         components: {
