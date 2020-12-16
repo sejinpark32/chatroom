@@ -23,7 +23,7 @@
                 </ul>
             </div>
             <div class="p-3" v-show="!isRoomShow">
-                <div class="clearfix"><span class="badge badge-primary mr-sm-1">me!</span>{{myId}}
+                <div class="clearfix"><span class="badge badge-primary mr-sm-1">me!</span>{{myNickName}}({{myId}})
                     <button type="button" class="btn btn-sm btn-outline-warning float-right" v-on:click="showNicknameLayer"><i class="fa fa-edit"></i>닉네임변경</button></div>
                 <ul id="user-list" class="list-group list-group-flush">
                     <user-item v-for="item in userList" v-bind:user="item" v-bind:key="item.userId"></user-item>
@@ -54,14 +54,30 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="staticBackdropLabel">닉네임변경</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">×</span>
+                    </button>
                 </div>
                 <div class="modal-body">
-                    ...
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            <label class="col-form-label">현재닉네임</label>
+                        </div>
+                        <div class="col-auto">{{myNickName}}</div>
+                    </div>
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            <label for="targetNickname" class="col-form-label">변경닉네임</label>
+                        </div>
+                        <div class="col-auto">
+                            <input type="text" id="targetNickname" class="form-control" v-model="targetNickName"/>
+                            <span v-show="!nicknameResult">누군가 사용중입니다.</span>
+                        </div>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
-                    <button type="button" class="btn btn-primary">변경</button>
+                    <button type="button" class="btn btn-primary" v-on:click="changeNickname">변경</button>
                 </div>
             </div>
         </div>
@@ -92,19 +108,22 @@
             isRoomShow: true,
             myId: '',
             myNickName: '',
-            changeIdModal: {}
+            targetNickName: '',
+            changeIdModal: {},
+            nicknameResult: true
         }, created: function () {
             this.chatRoomList.push(this.roomName);
 
             this.socket.on('message', (data) => {
                 let sendType = data.sendType;
                 let userId = data.userId;
+                let userNickname = data.userNickname;
                 let msg = '';
                 let roomId = data.roomId;
 
                 switch (sendType) {
                     case "chat":
-                        this.addChatMsg(roomId, userId, data.message );
+                        this.addChatMsg(roomId, userId, userNickname, data.message );
                         break;
                     case "wait":
                         this.roomList = data.roomInfo;
@@ -120,7 +139,7 @@
                         //접속해있던 방에 퇴장 메시지 뿌림
                         roomId = data.roomId;
                         msg = this.makeLeaveNoticeMsg(userId);
-                        this.addChatMsg(roomId, userId, msg);
+                        this.addChatMsg(roomId, userId, userNickname, msg);
 
                         //방 접속자 인원수 감소
                         this.changeRoomUserSize('waiting', -1);
@@ -131,10 +150,28 @@
 
                         //대기방에 입장 메시지 뿌림
                         msg = this.makeEnterNoticeMsg(userId);
-                        this.addChatMsg(roomId, userId, msg);
+                        this.addChatMsg(roomId, userId, userNickname, msg);
 
                         //방 접속자 인원수 증가
                         this.changeRoomUserSize(roomId, 1);
+                        break;
+                    case "nicknameResult":
+                        this.nicknameResult = data.success;
+
+                        if(this.nicknameResult){ //성공
+                            this.changeIdModal.hide();
+                        }
+
+                        break;
+                    case "someoneChangeNickname":
+                        let nickName = data.nickname;
+
+                        if(userId == this.myId){
+                            this.myNickName = nickName
+                        } else {
+                            this.userList[this.findUserIndexById(userId)].nickName = nickName;
+                        }
+
                         break;
                     default:
                 }
@@ -147,7 +184,8 @@
                 this.socket.emit('send', {
                     message: this.message,
                     roomId: this.roomId,
-                    userId: this.myId
+                    userId: this.myId,
+                    userNickname: this.myNickName
                 });
 
                 this.message = '';
@@ -157,16 +195,27 @@
                 return userId + '님이 입장하셨습니다.';
             }, makeLeaveNoticeMsg: function (userId) {
                 return userId + '님이 퇴장하셨습니다.';
-            }, addChatMsg: function (roomId, userId, msg) {
-                this.chatList[roomId].push({userId: userId, text: msg});
+            }, addChatMsg: function (roomId, userId, userNickname, msg) {
+                this.chatList[roomId].push({userId: userId, userNickname: userNickname, text: msg});
+
+                Vue.nextTick()
+                    .then(function () {
+                        //scroll to the bottom
+                        let listHeight = $('.chat-list > ul')[0].offsetHeight;
+                        $('.chat-list')[0].scrollTo(0, listHeight);
+                    });
             }, changeRoomUserSize: function (roomId, change) {
                 this.roomList[roomId].userSize += change;
             }, changeNickname: function(){
                 this.socket.emit('changeNickname', {
-
+                    current: this.myNickName,
+                    target: this.targetNickName,
+                    userId: this.myId
                 });
             }, showNicknameLayer: function(){
                 this.changeIdModal.show();
+            }, findUserIndexById: function(userId){
+                return this.userList.findIndex((u) => u.userId == userId);
             }
         },
         components: {

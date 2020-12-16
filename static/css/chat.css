@@ -2,7 +2,47 @@
     --light-gray: #d4d4d4;
 }
 body {background: var(--light);}
-ul {list-style: none;padding: 0;}
+ul {list-style: none;padding: 0;margin: 0;}
 .container {background: var(--white);border-radius: 10px;border: 1px solid var(--light-gray);}
 .chat-list {height: 500px;overflow-y: scroll;}
 .btn-none {background: none;border: none;}
+
+/* width */
+::-webkit-scrollbar {
+    width: 3px;
+}
+
+/* button */
+::-webkit-scrollbar-button {
+    background: #f7f7f7;
+}
+
+/* Handle */
+::-webkit-scrollbar-thumb {
+    background: #dadada;
+}
+
+/* Handle on hover */
+::-webkit-scrollbar-thumb:hover {
+    background: #666;
+}
+
+/* Track */
+::-webkit-scrollbar-track {
+    background: #f7f7f7;
+}
+
+/* The track NOT covered by the handle.
+::-webkit-scrollbar-track-piece {
+    background: #000;
+}
+
+/* Corner */
+::-webkit-scrollbar-corner {
+    background: #999;
+}
+
+/* Resizer */
+::-webkit-resizer {
+    background: #111;
+}

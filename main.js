@@ -98,8 +98,33 @@ io.on('connection', (socket) => {
     });
 
     socket.on('changeNickname', (msg) => {
+        let currentIndex = getUserIndex(msg.userId); //현재인덱스
+        let index = allUsers.findIndex((u) => u.nickName == msg.target); //변경닉네임인덱스
 
-    })
+        if(index == -1){ //통과
+            allUsers[currentIndex].nickName = msg.target;
+
+            // 닉네임을 바꾸려는 사람에게 알려줌
+            socket.send({
+                sendType: 'nicknameResult',
+                success: true
+            });
+
+            // 모든 사람에게 뿌려서 접속자 목록에서 바꿔야함&&접속해있는 방도 뿌림
+            allUsers.forEach(u => {
+                u.socket.send({
+                    sendType: 'someoneChangeNickname',
+                    userId: allUsers[currentIndex].userId,
+                    nickname: msg.target
+                });
+            });
+        } else {
+            socket.send({
+                sendType: 'nicknameResult',
+                success: false
+            });
+        }
+    });
 
     function getUser(userId) {
         return allUsers.find((u) => {
