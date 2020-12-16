@@ -1,2 +1,2 @@
 # chatroom
-chatting room made by nodejs
+chatting room with nodejs server and vuejs
